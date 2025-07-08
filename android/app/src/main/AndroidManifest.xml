@@ -8,9 +8,9 @@
 
     <application
         android:requestLegacyExternalStorage="true"
-        android:label="fd_downloader"
+        android:label="FdDownloader"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/launcher_icon">
         <activity
             android:name=".MainActivity"
             android:exported="true"

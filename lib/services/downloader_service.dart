@@ -74,7 +74,7 @@ class DownloaderService {
 
     final extension = type == FileType.video ? ".mp4" : ".mp3";
     // Generate unique filename
-    final fileName = "${uuid.v4()}.$extension";
+    final fileName = "${uuid.v4()}$extension";
     final filePath = await storageService.getVideoFilePath(fileName);
 
     // Check if filePath is null
