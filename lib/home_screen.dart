@@ -1,22 +1,25 @@
 import 'package:dropdown_button2/dropdown_button2.dart';
+import 'package:fd_downloader/providers/download_progress_provider.dart';
 import 'package:fd_downloader/services/downloader_service.dart';
+import 'package:fd_downloader/utils/snackbar_helper.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-enum Plataforma { youtube, instagram, tiktok }
-
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   final TextEditingController _urlController = TextEditingController();
   final _downloaderService = DownloaderService();
-  final bool _isDownloading = false;
+  bool _isDownloading = false;
   Plataforma _selectedPlataforma = Plataforma.youtube;
+  FileType _selectedFileType = FileType.video;
 
   @override
   void dispose() {
@@ -76,11 +79,20 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildUrlTextFormField() {
     return TextField(
       controller: _urlController,
-      decoration: const InputDecoration(
+      decoration: InputDecoration(
         border: OutlineInputBorder(
           borderRadius: BorderRadius.all(Radius.circular(10)),
         ),
-        prefixIcon: Icon(FontAwesomeIcons.link, size: 20),
+        prefixIcon: IconButton(
+          onPressed: () async {
+            _urlController.clear();
+            ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
+            setState(() {
+              _urlController.text = data != null ? data.text! : "";
+            });
+          },
+          icon: Icon(FontAwesomeIcons.link, size: 20),
+        ),
         labelText: "URL del video",
       ),
     );
@@ -97,8 +109,50 @@ class _HomeScreenState extends State<HomeScreen> {
           minimumSize: const Size(0, 48), // Height
           padding: const EdgeInsets.symmetric(horizontal: 16),
         ),
-        onPressed: () async =>
-            await _downloaderService.downloadReel(_urlController.text),
+        onPressed: () async {
+          setState(() {
+            _isDownloading = true;
+          });
+          try {
+            switch (_selectedPlataforma) {
+              case Plataforma.youtube:
+                await _downloaderService.downloadYoutubeVideo(
+                  _urlController.text,
+                  ref,
+                  _selectedFileType,
+                );
+              case Plataforma.tiktok:
+                await _downloaderService.downloadTiktok(
+                  _urlController.text,
+                  ref,
+                );
+                break;
+              case Plataforma.instagram:
+                await _downloaderService.downloadReel(_urlController.text, ref);
+                break;
+            }
+            if (!mounted) return;
+            SnackbarHelper.showCustomSnackbar(
+              context: context,
+              message: "Descarga completada",
+              type: SnackbarType.success,
+            );
+          } catch (e) {
+            if (!mounted) return;
+
+            final errorMsg = e.toString().replaceAll("Exception: ", "");
+            SnackbarHelper.showCustomSnackbar(
+              context: context,
+              message: errorMsg,
+              type: SnackbarType.error,
+            );
+          } finally {
+            setState(() {
+              _isDownloading = false;
+            });
+            ref.read(downloadProgressProvider.notifier).reset();
+          }
+        },
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.max,
@@ -109,6 +163,75 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildDownloadProgress() {
+    return Consumer(
+      builder: (context, ref, _) {
+        final progress = ref.watch(downloadProgressProvider);
+
+        // Check if download is complete and trigger setState
+        if (progress >= 100) {
+          // Delay until after build
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            // Avoid calling setState if widget is disposed
+            if (context.mounted) {
+              setState(() {
+                _isDownloading = false;
+              });
+
+              // Reset the provider
+              ref.read(downloadProgressProvider.notifier).reset();
+            }
+          });
+        }
+
+        return Column(
+          children: [
+            Text(
+              progress == 0 ? "Preparando descarga..." : "Descargando...",
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 8),
+            LinearProgressIndicator(
+              value: progress / 100,
+              minHeight: 6,
+              backgroundColor: Colors.grey[300],
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+            ),
+            const SizedBox(height: 8),
+            Text("${progress.toStringAsFixed(0)}%"),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildFileTypeSelection() {
+    return Row(
+      children: [
+        RadioMenuButton(
+          value: FileType.video,
+          groupValue: _selectedFileType,
+          onChanged: (FileType? value) {
+            setState(() {
+              _selectedFileType = FileType.video;
+            });
+          },
+          child: Text("Video", style: Theme.of(context).textTheme.bodyMedium),
+        ),
+        RadioMenuButton(
+          value: FileType.audio,
+          groupValue: _selectedFileType,
+          onChanged: (FileType? value) {
+            setState(() {
+              _selectedFileType = FileType.audio;
+            });
+          },
+          child: Text("Audio", style: Theme.of(context).textTheme.bodyMedium),
+        ),
+      ],
     );
   }
 
@@ -147,16 +270,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 SizedBox(height: 25),
                 _buildPlataformDropDown(),
+                if (_selectedPlataforma == Plataforma.youtube)
+                  _buildFileTypeSelection(),
                 SizedBox(height: 50),
                 _buildUrlTextFormField(),
                 SizedBox(height: 50),
                 _buildDownloadButton(),
                 SizedBox(height: 25),
-                if (_isDownloading)
-                  Text(
-                    "Descargando...",
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
+                if (_isDownloading) _buildDownloadProgress(),
               ],
             ),
           ),
