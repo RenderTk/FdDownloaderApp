@@ -9,11 +9,11 @@ enum FileType { video, audio }
 
 enum Plataforma { youtube, instagram, tiktok }
 
-final String instagramUrl = "http://192.168.4.156:8002/instagram";
+final String instagramUrl = "/instagram";
 
-final String tiktokUrl = "http://192.168.4.156:8002/tiktok";
+final String tiktokUrl = "/tiktok";
 
-final String youtubeUrl = "http://192.168.4.156:8002/youtube";
+final String youtubeUrl = "/youtube";
 
 class DownloaderService {
   /// Helper function to validate Instagram Reel URLs
@@ -91,7 +91,7 @@ class DownloaderService {
         throw Exception("Invalid Instagram reel URL.");
       }
 
-      final dio = DioService.dio;
+      final dio = await DioService.getInstance();
       final filePath = await getFileSavePath(FileType.video);
 
       final response = await dio.download(
@@ -123,7 +123,7 @@ class DownloaderService {
         throw Exception("Invalid tiktok video URL.");
       }
 
-      final dio = DioService.dio;
+      final dio = await DioService.getInstance();
       final filePath = await getFileSavePath(FileType.video);
 
       final response = await dio.download(
@@ -159,7 +159,7 @@ class DownloaderService {
         throw Exception("Invalid youtube video URL.");
       }
 
-      final dio = DioService.dio;
+      final dio = await DioService.getInstance();
       final filePath = await getFileSavePath(type);
 
       final response = await dio.download(
