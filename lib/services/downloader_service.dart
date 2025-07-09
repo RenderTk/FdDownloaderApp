@@ -75,7 +75,10 @@ class DownloaderService {
     final extension = type == FileType.video ? ".mp4" : ".mp3";
     // Generate unique filename
     final fileName = "${uuid.v4()}$extension";
-    final filePath = await storageService.getVideoFilePath(fileName);
+    final filePath = await storageService.getVideoFilePath(
+      fileName,
+      customFolder: "FdDownloader",
+    );
 
     // Check if filePath is null
     if (filePath == null) {

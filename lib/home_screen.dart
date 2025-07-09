@@ -252,18 +252,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.tertiaryContainer,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(FontAwesomeIcons.download, size: 40),
-                ),
-                SizedBox(height: 12),
+                Image.asset("assets/logo.png", width: 150),
+                SizedBox(height: 15),
                 Text(
-                  "Descarga video facilemente!",
+                  "Descarga video facilmente!",
                   style: Theme.of(
                     context,
                   ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
