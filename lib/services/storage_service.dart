@@ -96,7 +96,7 @@ class StorageService {
     if (hasPermission && androidInfo.version.sdkInt >= 30) {
       // Android 11+ with permission - use Downloads folder
       try {
-        final directory = Directory('/storage/emulated/0/DCIM');
+        final directory = Directory('/storage/emulated/0/Movies');
         if (await directory.exists()) {
           final targetDir = customFolder != null
               ? Directory('${directory.path}/$customFolder')
